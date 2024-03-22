@@ -1,120 +1,70 @@
-import json
-import random
 import socket
 from threading import Thread
-import logging
-import hashlib
-
-# 5. Модифицировать код сервера таким образом, чтобы все служебные сообщения выводились не в консоль, а в специальный лог-файл.
-logging.basicConfig(format="%(asctime)s [%(levelname)s] %(funcName)s: %(message)s",
-                    handlers=[logging.FileHandler("logs/server.log"), logging.StreamHandler()], level=logging.INFO)
-
-USERS = {}
-CONNECTIONS_LIST = []
-SALT = 'random_salt'.encode('utf-8')
-COLORS = ['\33[31m', '\33[32m', '\33[33m', '\33[34m', '\33[35m', '\33[36m', '\33[91m', '\33[92m', '\33[93m', '\33[94m',
-          '\33[95m', '\33[96m']
 
 
-class ClientThread(Thread):
-    def __init__(self, connection, address):
-        super().__init__(daemon=True)
-        self.connected = True
-        self.conn = connection
-        self.addr = address
-        self.username = None
-        self.color = random.choice(COLORS)
-        self.login()
-
-    def login(self):
-        # 7. Реализовать сервер идентификации. 
-        self.send_msg('Введите имя пользователя')
-        name = self.receive_msg()
-        self.username = name
-        if name in USERS.keys():
-            self.send_msg('Введите пароль')
-            if USERS[name]['password'] == self.receive_msg():
-                self.success_login()
-            else:
-                self.close_connection('неправильный пароль')
-        else:
-            self.send_msg('Установите новый пароль')
-            USERS.update({name: {'password': self.receive_msg()}})
-            save_users()
-
-    # Функция для закрытия соединения с пользователем
-    def close_connection(self, reason=''):
-        logging.info(f'Соединение закрыто {self.addr} {" - " + reason if reason else ""}')
-        self.connected = False
-        send_msg_all(f"{self.username} покинул чат")
-        if self in CONNECTIONS_LIST:
-            CONNECTIONS_LIST.remove(self)
-
-    def send_msg(self, message):
-        # Функция для отправки сообщения пользователю
-        if self.connected:
-            send_text(self.conn, message)
-            
-    def run(self):
-        # Запуск потока для пользователя
-        CONNECTIONS_LIST.append(self)
-        self.send_msg(f'{self.username}, добро пожаловать в чат')
-        service_msg(self, 'присоединился к чату')
-
-        # 3. Модифицируйте код сервера таким образом, чтобы при разрыве соединения клиентом он продолжал слушать данный порт и,
-        # таким образом, был доступен для повторного подключения.
-        while True and self.connected:
-            message = self.receive_msg()          
-            # 2. Модифицируйте код сервера таким образом, чтобы он читал строки в цикле до тех пор, пока клиент не введет “exit”.
-            # Можно считать, что это команда разрыва соединения со стороны клиента.
-            if message == 'exit':
-                self.close_connection('пользователь вышел из чата')
-                break
-            send_msg_all(f'{self.color}{self.username}\33[0m: {message}')
+def input_check(message=''):
+    # 2. Модифицируйте код сервера таким образом, чтобы он читал строки в цикле до тех пор, пока клиент не введет “exit”.
+    # Можно считать, что это команда разрыва соединения со стороны клиента.
+    a = input(message)
+    if a in ['exit', '/stop']:
+        exit()
+    return a
 
 
-def save_users():
-    # Функция для сохранения пользователей в файл
-    with open('users.json', 'w') as f:
-        json.dump(USERS, f, indent=4)
+connection_alive = True
 
 
-def send_msg_all(message):
-    # Функция для отправки сообщения всем пользователям
-    [i.send_msg(message) for i in CONNECTIONS_LIST]
+def receive_messages():
+    # Функция для приема сообщений от сервера
+    global connection_alive
+    while True:
+        try:
+            data = sock.recv(1024).decode('utf-8')
+            print(data)
+        except (ConnectionRefusedError, ConnectionAbortedError, ConnectionResetError) as e:
+            connection_alive = False
+            print(e)
+            break
 
-
-def service_msg(user, message):
-    # Функция для отправки служебного сообщения всем пользователям, кроме определенного пользователя
-    [i.send_msg(f'\33[4m{user.username} {message}\33[0m') for i in CONNECTIONS_LIST if i != user]
 
 def send_text(conn, message):
+    # Функция для отправки текстового сообщения серверу
+    message = message.encode('utf-8')
     conn.send(message)
 
 
-if __name__ == '__main__':    # Точка входа в программу
-    # 6. Модифицируйте код сервера таким образом, чтобы он автоматически изменял номер порта, если он уже занят. 
-    # Сервер должен выводить в консоль номер порта, который он слушает.
+try:
+    # Реализовать безопасный ввод данных и значения по умолчанию.
+    print("Для использования настроек по умолчанию ничего не вводите")
+    # 4. Модифицируйте код клиента и сервера таким образом, чтобы номер порта и имя хоста (для клиента) они спрашивали у пользователя. 
+    host = input_check("Введите имя хоста: ")
+    if not host:
+        host = '127.0.1.1'
+        print(f"Выставили адрес хоста по умолчанию {host}")
+    port = input_check(f"Введите порт для {host}: ")
+    if not port:
+        port = 9000
+        print(f"Выставили порт по умолчанию: {port}")
+    else:
+        port = int(port)
+    # Реализовать безопасный ввод данных и значения по умолчанию.
+except ValueError:
+    print("Неверно указан порт! Попробуйте еще раз!")
+try:
     sock = socket.socket()
-    port = 9000
+    sock.connect((host, port))
+    print(f"Подключение к {host}:{port} успешно!\n")
+except (socket.gaierror, ConnectionRefusedError) as e:
+    print(f"Не удается подключиться к {host}:{port} ({e})!")
+
+# Поток для прослушивания информации с сервера
+Thread(target=receive_messages, daemon=True).start()
+
+while True:
     while True:
-        try:
-            sock.bind(('', port))
+        message = input_check()
+        if connection_alive:
+            send_text(sock, message)
+        else:
+            sock.close()
             break
-        except OSError:
-            port += 1
-    print(f'Запущено на {socket.gethostbyname(socket.gethostname())}:{port}')
-    logging.info(f'Запущено на {socket.gethostbyname(socket.gethostname())}:{port}')
-    sock.listen(10)
-    try:
-        with open('users.json', 'r') as file:
-            USERS = json.load(file)
-    except json.decoder.JSONDecodeError:
-        USERS = {}
-    while True:
-        # Создание новых потоков для пользователей
-        conn, addr = sock.accept()
-        print(f'Открыто соединение {addr} ')
-        logging.info(f'Открыто соединение {addr} ')
-        thread = ClientThread(conn, addr)
-        thread.start()
