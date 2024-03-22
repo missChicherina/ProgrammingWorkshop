@@ -92,7 +92,29 @@ class FileManager:
         else:
             print(f"Исходный файл '{source_file}' не существует или это не файл, либо целевая папка '{destination_directory}' не существует или это не папка.")
 
-    # # # # # # # ДОПОЛНИТЕЛЬНЫЕ ЗАДАНИЯ # # # # # # # 
+    # Перемещение файлов;
+    def move_file(self, source_file, destination_directory):
+        source_file_path = os.path.join(self.current_directory, source_file)
+        destination_directory_path = os.path.join(self.current_directory, destination_directory)
+        if os.path.exists(source_file_path) and os.path.isfile(source_file_path) and os.path.exists(destination_directory_path) and os.path.isdir(destination_directory_path):
+            shutil.move(source_file_path, destination_directory_path)
+            print(f"Файл '{source_file}' успешно перемещен в папку '{destination_directory}'.")
+        else:
+            print(f"Исходный файл '{source_file}' не существует или это не файл, либо целевая папка '{destination_directory}' не существует или это не папка.")
+
+    # Переименование файлов.
+    def rename_file(self, old_name, new_name):
+        old_file_path = os.path.join(self.current_directory, old_name)
+        new_file_path = os.path.join(self.current_directory, new_name)
+        if os.path.exists(old_file_path) and os.path.isfile(old_file_path):
+            os.rename(old_file_path, new_file_path)
+            print(f"Файл '{old_name}' успешно переименован в '{new_name}'.")
+        else:
+            print(f"Файл с именем '{old_name}' не существует или это не файл.")
+
+
+
+        # # # # # # # ДОПОЛНИТЕЛЬНЫЕ ЗАДАНИЯ # # # # # # # 
 
     # Архивация и разархивация файлов и папок;     
     def archive_folder(self, folder_name):
@@ -107,3 +129,44 @@ class FileManager:
         print(f"Total space: {total_space} bytes")
         print(f"Used space: {used_space} bytes")
         print(f"Remaining space: {remaining_space} bytes")
+
+    # Просмотр списка файлов
+    def list_files(self):
+        files = os.listdir(self.current_directory)
+        print(f"Files and folders in '{self.current_directory}':")
+        for file in files:
+            print(file)
+
+    # Загрузка данных пользователя 
+    def load_users_data(self):
+        if os.path.exists("settings.json"):
+            with open("settings.json", "r") as users_file:
+                settings = json.load(users_file)
+                self.users = settings["users"]
+    
+    # Регистрация пользователя
+    def register_user(self, username):
+        home_directory = os.path.join(os.getcwd(), username)
+        os.makedirs(home_directory, exist_ok=True)
+        self.users[username] = home_directory
+        self.current_directory = home_directory
+        self.save_users_data()  # Сохраняем обновленные данные о пользователях в файл
+        print(f"User '{username}' успешно зарегистрирован.")
+
+    # Сохранение данных о пользователях в файл settings.json
+    def save_users_data(self):
+        # Сохранение данных о пользователях в файл settings.json
+        with open("settings.json", "r+") as settings_file:
+            settings_data = json.load(settings_file)
+            settings_data["users"] = self.users
+            settings_file.seek(0)  # Переходим в начало файла
+            json.dump(settings_data, settings_file, indent=4)  # Записываем обновленные данные
+            settings_file.truncate()  # Обрезаем файл до текущей позиции
+
+    # Вход в систему
+    def login_user(self, username):
+        if username in self.users:
+            self.current_directory = self.users[username]
+            print(f"Logged in as '{username}'.")
+        else:
+            print("User not found.")
