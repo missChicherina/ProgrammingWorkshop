@@ -18,6 +18,7 @@ class Server:
 
     def init_server(self):
         # 2. при подключении клиента создавался новый поток, в котором происходило взаимодействие с ним.
+        # 4. Прослушивание портов в отдельном потоке:       
         sock = socket.socket()
         sock.bind(('', self.server_port))
         sock.listen(5)
@@ -36,7 +37,7 @@ class Server:
                 connection.send(pickle.dumps(["message", msg, username]))
                 logging.info(f"Отправка данных клиенту {connection.getsockname()}: {msg}")
 
-    
+
     def client_logic(self, conn, address):
         # Поток прослушивания клиентов
         self.authorization(address, conn)
@@ -71,7 +72,6 @@ class Server:
                     for connection in self.connections:
                         connection.send(pickle.dumps(["message", f"{username} отключился от сервера", "~SERVER~"]))
                     break
-
             else:
                 # Закрываем соединение
                 conn.close()
@@ -83,7 +83,41 @@ class Server:
         # "Реализовать простой чат сервер на базе сервера аутентификации.
         # Авторизация пользователей
         conn.send(pickle.dumps(["auth", "Введите имя пользователя: "]))
-        logging.info(f"Клиент {self.sock.getsockname()} успешно авторизировался")
+        username = pickle.loads(conn.recv(1024))[1]
+        try:
+            # Данные пользователей из файла
+            self.users = self.database_read()
+        except json.decoder.JSONDecodeError:
+            # Первичная запись в пустой файл
+            self.registration(addr, conn, username)
+        is_registered = False
+        for user in self.users:
+            for key, value in user.items():
+                if key == username:
+                    is_registered = True
+                    password = value['password']
+                    conn.send(pickle.dumps(["passwd", "Введите свой пароль: "]))
+                    passwd = pickle.loads(conn.recv(1024))[1]
+                    # Проверка пароля
+                    if self.check_password(passwd, password):
+                        conn.send(pickle.dumps(["success", f"Добро пожаловать, {username}"]))
+                    else:
+                        # Если пароль неверный снова отправляем на авторизацию
+                        self.authorization(addr, conn)
+                    logging.info(f"Клиент {self.sock.getsockname()} успешно авторизировался")
+        if not is_registered:
+            self.registration(addr, conn, username)
+
+    def registration(self, addr, conn, username):
+        # Регистрация пользователя с новым username
+        conn.send(pickle.dumps(["passwd", "Введите новый пароль: "]))
+        passwd = self.generate_hash(pickle.loads(conn.recv(1024))[1])
+        conn.send(pickle.dumps(["success", f"Успешная регистрация, {username}"]))
+        self.users.append({username: {'password': passwd, 'address': addr[0]}})
+        # Запись в файл при регистрации пользователя
+        logging.info(f"Клиент {self.sock.getsockname()} успешно зарегистрировался")
+        self.database_write()
+        self.users = self.database_read()
 
     def database_read(self):
         with open(self.database, 'r') as f:
@@ -93,6 +127,12 @@ class Server:
     def database_write(self):
         with open(self.database, 'w') as f:
             json.dump(self.users, f, indent=4)
+
+    def check_password(self, user_input, real_password):
+        # Проверка пароля
+        key = hashlib.md5(user_input.encode() + b'salt').hexdigest()
+        correct_password = key == real_password
+        return correct_password
 
 
 def is_available_port(port):
@@ -106,8 +146,13 @@ def is_available_port(port):
         logging.info(f"Порт {port} занят")
         return False
 
+# 4. Команда "Показ логов":
+logging.basicConfig(format="%(asctime)s [%(levelname)s] %(funcName)s: %(message)s",
+                    handlers=[logging.FileHandler("logs/server.log"), logging.StreamHandler()], level=logging.INFO)
+
 
 def main():
+    # 4. Возможность принятия команд от пользователя:
     server_port = 9090  # порт по умолчанию
     # Если порт по умолчанию занят, то перебираем порты
     if not is_available_port(server_port):
