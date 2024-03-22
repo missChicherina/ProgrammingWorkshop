@@ -1,0 +1,20 @@
+[
+    {
+        "admin": {
+            "password": "0dde5185db7da5c81f0fa71696506e4f",
+            "address": "127.0.0.1"
+        }
+    },
+    {
+        "user1": {
+            "password": "0dde5185db7da5c81f0fa71696506e4f",
+            "address": "127.0.0.1"
+        }
+    },
+    {
+        "user2": {
+            "password": "0dde5185db7da5c81f0fa71696506e4f",
+            "address": "127.0.0.1"
+        }
+    }
+]
