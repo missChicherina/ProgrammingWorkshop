@@ -1,6 +1,6 @@
-import json
 import os
 import shutil
+import json
 
 class FileManager:
     def __init__(self, current_directory):
@@ -46,16 +46,60 @@ class FileManager:
         else:
             print(f"Папки с именем '{directory_name}' не существует или это не папка.")
 
-    
+    # Создание пустых файлов с указанием имени;
+    def create_file(self, file_name):
+        new_file_path = os.path.join(self.current_directory, file_name)
+        if not os.path.exists(new_file_path):
+            open(new_file_path, 'w').close()
+            print(f"Файл '{file_name}' успешно создан.")
+        else:
+            print(f"Файл с именем '{file_name}' уже существует.")
+
+    # Запись текста в файл; 
+    def write_to_file(self, file_name, text):
+        file_path = os.path.join(self.current_directory, file_name)
+        with open(file_path, 'w') as file:
+            file.write(text)
+        print(f"Текст успешно записан в файл '{file_name}'.")
+
+    # Просмотр содержимого текстового файла;
+    def read_file(self, file_name):
+        file_path = os.path.join(self.current_directory, file_name)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            with open(file_path, 'r') as file:
+                content = file.read()
+            print(f"Содержимое файла '{file_name}':")
+            print(content)
+        else:
+            print(f"Файл с именем '{file_name}' не существует или это не файл.")
+
+    # Удаление файлов по имени;
+    def delete_file(self, file_name):
+        file_path = os.path.join(self.current_directory, file_name)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            os.remove(file_path)
+            print(f"Файл '{file_name}' успешно удален.")
+        else:
+            print(f"Файл с именем '{file_name}' не существует или это не файл.")
+
+    # Копирование файлов из одной папки в другую;
+    def copy_file(self, source_file, destination_directory):
+        source_file_path = os.path.join(self.current_directory, source_file)
+        destination_directory_path = os.path.join(self.current_directory, destination_directory)
+        if os.path.exists(source_file_path) and os.path.isfile(source_file_path) and os.path.exists(destination_directory_path) and os.path.isdir(destination_directory_path):
+            shutil.copy(source_file_path, destination_directory_path)
+            print(f"Файл '{source_file}' успешно скопирован в папку '{destination_directory}'.")
+        else:
+            print(f"Исходный файл '{source_file}' не существует или это не файл, либо целевая папка '{destination_directory}' не существует или это не папка.")
+
     # # # # # # # ДОПОЛНИТЕЛЬНЫЕ ЗАДАНИЯ # # # # # # # 
 
-    # Архивация и разархивация файлов и папок;        
+    # Архивация и разархивация файлов и папок;     
     def archive_folder(self, folder_name):
         folder_path = os.path.join(self.current_directory, folder_name)
         shutil.make_archive(folder_path, 'zip', root_dir=folder_path)
         print(f"Папка '{folder_name}' успешно архивирована.")
 
-    #  Квотирование дискового пространства и отображение занятого оставшегося места;
     def quota_status(self):
         total_space = shutil.disk_usage(self.current_directory).total
         used_space = sum(os.path.getsize(os.path.join(self.current_directory, file)) for file in os.listdir(self.current_directory) if os.path.isfile(os.path.join(self.current_directory, file)))
