@@ -1,9 +1,12 @@
+# Код клиента
+
 import socket
+import os
 import json
 
 HOST = 'localhost'
 PORT = 6666
-USERS_FILE = 'users.json'
+USERS_FILE = os.path.join(os.getcwd(), 'users.json')
 
 def load_users():
     with open(USERS_FILE) as f:
@@ -28,19 +31,21 @@ def register():
 
 def action_menu():
     print("Choose action:")
-    print("1. View current directory contents")
-    print("2. Print current working directory")
-    print("3. Exit")
+    print("View current directory contents: LS")
+    print("Print current working directory: PWD")
+    print("Create folder: MKDIR + new name of your dir")
+    print("Delete folder: RMDIR + name of your folder to delete")
+    print("Delete file: RM + filename to delete")
+    print("Rename file: MV + oldname + newname")
+    print("For exit: EXIT")
+
 
 def send_to_serve(request):    
     sock = socket.socket()
     sock.connect((HOST, PORT))
-    print("sock.connect((HOST, PORT))")
     sock.send(request.encode())
-    print("sock.send(request.encode())")
     response = sock.recv(1024).decode()
     print(response)
-    
     sock.close()
 
 def main():
@@ -53,9 +58,17 @@ def main():
         choice = input("Select an option: ")
 
         if choice == '1':
-            request = login()
+            request = login()            
+            if request.split()[1] != "admin":
+                user = os.path.join(os.getcwd(), "users", request.split()[1])
+            else:
+                user = os.path.join(os.getcwd(), "users")
+            print(user)
         elif choice == '2':
             request = register()
+            user = os.path.join(os.getcwd(), "users", request.split()[1])
+            sock.send(request.encode())
+            break
         else:
             print("Invalid choice. Please enter 1 or 2.")
             continue
@@ -69,42 +82,21 @@ def main():
 
     while True:
         action_menu()
-        choice = input("Select an action: ")
-
-        if choice == '1':            
-            send_to_serve('pwd')
-        
-        elif choice == '2':
-            send_to_serve('pwd')
-            # request = "pwd"
-            
-        elif choice == 'ls':
-            send_to_serve(request)
-
-        elif choice == '3': 
-            request = "exit"
-            sock.send(request.encode())
-            response = sock.recv(1024).decode()
-            print(response)
-            break
-        else:
-            print("Invalid choice. Please enter 1, 2, or 3.")
+        print("---------------------------------------\n")
+        req = input("your cmd here > ")
+        cmd = req.split()[0]
+        if cmd != 'mkdir' and cmd != "pwd" and cmd != "ls" and cmd != "rmdir" and cmd != "rm" and cmd != "mv" and cmd != "mv":
+            print("Check your cmd is correct")
             continue
-
-        # sock.send(request.encode())
-        # response = sock.recv(1024).decode()
-        # print(response)
-        # sock = socket.socket()
-        # sock.connect((HOST, PORT))
-        
-        # sock.send(request.encode())
-        
-        # response = sock.recv(1024).decode()
-        # print(response)
-        
+        req = req + " " + user
+        sock = socket.socket()
+        sock.connect((HOST, PORT))
+        sock.send(req.encode())
+        response = sock.recv(1024).decode()
+        print(response)
+        print("\n---------------------------------------\n")
         sock.close()
-
-    sock.close()
 
 if __name__ == "__main__":
     main()
+
