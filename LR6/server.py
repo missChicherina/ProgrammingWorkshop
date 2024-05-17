@@ -1,11 +1,13 @@
+# тестить на 127.0.0.1
+
 import socket
 import os
+import datetime
 
 def handle_request(request):
-    # Разбираем запрос на метод и запрашиваемый ресурс
     method, resource = request.split()[:2]
     if resource == "/":
-        resource = "/index.html"  # Если ресурс не указан, отдаем index.html
+        resource = "2\index.html"  # Если ресурс не указан, отдаем index.html
     return method, resource
 
 def load_file_content(file_path):
@@ -18,6 +20,7 @@ def build_response(status_code, content_type, content):
     response += "Content-Type: " + content_type + "\r\n"
     response += "Content-Length: " + str(len(content)) + "\r\n"
     response += "Connection: close\r\n"
+    response += "Date: " + datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT") + "\r\n"
     response += "\r\n"  # Пустая строка, разделяющая заголовок и тело ответа
     response = response.encode() + content
     return response
