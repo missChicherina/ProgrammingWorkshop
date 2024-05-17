@@ -1,50 +1,43 @@
-# Функции для работы с пользователями:
-# load_users(): Загружает данные о пользователях из файла users.json.
-# save_users(users): Сохраняет данные о пользователях в файл users.json.
+# Обработка информации в формате JSON
+# Блок 2: Сервис принимает и отдает информацию в формате JSON
 
 from flask import Flask, request, jsonify
-from werkzeug.security import generate_password_hash
 import json
-import os
-from datetime import datetime
+import hashlib
+import datetime
 
 app = Flask(__name__)
-
-USERS_FILE = 'users.json'
-
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=4)
+users = []
 
 @app.route('/user/', methods=['POST'])
 def register_user():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
     
-    users = load_users()
+    salt = hashlib.sha256(username.encode()).hexdigest()
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    registration_date = datetime.datetime.now().isoformat()
     
-    if username in users:
-        return jsonify({"error": "User already exists"}), 400
-    
-    hashed_password = generate_password_hash(password)
-    users[username] = {
-        "password": hashed_password,
-        "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user = {
+        "username": username,
+        "password_hash": password_hash,
+        "salt": salt,
+        "registration_date": registration_date
     }
-    
-    save_users(users)
+    users.append(user)
     
     return jsonify({"message": "User registered successfully"}), 201
+
+@app.route('/user/<username>', methods=['GET'])
+def get_user(username):
+    user = next((user for user in users if user["username"] == username), None)
+    if user is None:
+        return jsonify({"error": "User not found"}), 404
+    
+    return jsonify(user), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
