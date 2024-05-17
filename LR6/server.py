@@ -5,21 +5,36 @@ import datetime
 import configparser
 import threading
 
+LOG_FILE = "server.log"
+
 def load_config():
     config = configparser.ConfigParser()
     config.read("server_config.ini")
     return config["Server"]
 
-def handle_request(request):
+def log(message):
+    with open(LOG_FILE, "a") as log_file:
+        log_file.write(f"{datetime.datetime.now()} - {message}\n")
+
+# Функция для обработки запроса от клиента
+def handle_request(request, client_address):
     method, resource = request.split()[:2]
     if resource == "/":
         resource = "/index.html"  # Если ресурс не указан, отдаем index.html
+    log(f"Request from {client_address}: {method} {resource}")
     return method, resource
 
+# Функция для обработки соединения с клиентом
+def handle_client_connection(client_socket, client_address):
+    log(f"Connection from {client_address}")
+    serve_client(client_socket, client_address)
+
+# Функция для загрузки содержимого файла
 def load_file_content(file_path):
     with open(file_path, 'rb') as file:
         return file.read()
 
+# Функция для определения типа содержимого файла
 def get_content_type(file_path):
     extension = os.path.splitext(file_path)[1]
     if extension in {'.html', '.htm'}:
@@ -35,9 +50,10 @@ def get_content_type(file_path):
     else:
         return 'application/octet-stream'  # Бинарный тип данных
 
+# Функция для построения HTTP-ответа
 def build_response(status_code, content_type, content, keep_alive=False):
     response = f"HTTP/1.1 {status_code}\r\n"
-    response += "Server: SimpleWebServer\r\n"
+    response += "Server: Chicherina_Mikhaylov_Shilkina's server\r\n"
     response += "Content-Type: " + content_type + "\r\n"
     response += "Content-Length: " + str(len(content)) + "\r\n"
     if keep_alive:
@@ -49,12 +65,13 @@ def build_response(status_code, content_type, content, keep_alive=False):
     response = response.encode() + content
     return response
 
-def serve_client(client_socket):
+# Функция для обслуживания клиента
+def serve_client(client_socket, client_address):
     while True:
         request_data = client_socket.recv(int(config["max_request_size"])).decode()
         if not request_data:
             break  # Если запрос пустой, заканчиваем обработку
-        method, resource = handle_request(request_data)
+        method, resource = handle_request(request_data, client_address)
         
         if method == "GET":
             resource_path = os.path.join(config["work_dir"], resource.strip("/"))
@@ -71,10 +88,7 @@ def serve_client(client_socket):
 
     client_socket.close()
 
-def handle_client_connection(client_socket, client_address):
-    print(f"Connection from {client_address}")
-    serve_client(client_socket)
-
+# Функция для обработки соединения с клиентом и создания нового потока для каждого клиента
 def main():
     global config
     config = load_config()
@@ -93,6 +107,8 @@ def main():
         client_socket, client_address = server_socket.accept()
         client_thread = threading.Thread(target=handle_client_connection, args=(client_socket, client_address))
         client_thread.start()
+
+        log(f"Thread started for {client_address}")
 
     server_socket.close()
 
