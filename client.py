@@ -18,12 +18,16 @@ def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(('localhost', 12345))
 
+    server_public_key = client.recv(4096)
+    client_public_key = client.recv(4096)
+    client.send(client_public_key)
+
     received_message = client.recv(4096)
-    decrypted_message = decrypt_message(received_message)
+    decrypted_message = decrypt_message(received_message, client_private_key)
     print("Received message from server:", decrypted_message.decode())
 
     message = "Hello, server!"
-    encrypted_message = encrypt_message(message.encode())
+    encrypted_message = encrypt_message(message.encode(), server_public_key)
     client.send(encrypted_message)
 
     client.close()
