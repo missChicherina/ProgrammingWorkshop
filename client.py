@@ -1,31 +1,30 @@
-# Клиент
 import socket
-import random
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
-def generate_private_key():
-    return random.randint(2, 100)
+def encrypt_message(message, public_key):
+    recipient_key = RSA.import_key(public_key)
+    cipher_rsa = PKCS1_OAEP.new(recipient_key)
+    encrypted_message = cipher_rsa.encrypt(message)
+    return encrypted_message
 
-def generate_public_key(g, p, private_key):
-    return (g ** private_key) % p
-
-def generate_shared_secret(public_key, private_key, p):
-    return (public_key ** private_key) % p
+def decrypt_message(encrypted_message, private_key):
+    key = RSA.import_key(private_key)
+    cipher_rsa = PKCS1_OAEP.new(key)
+    decrypted_message = cipher_rsa.decrypt(encrypted_message)
+    return decrypted_message
 
 def main():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(('localhost', 12345))
 
-    g = 5  # генератор
-    p = 23  # простое число
+    received_message = client.recv(4096)
+    decrypted_message = decrypt_message(received_message)
+    print("Received message from server:", decrypted_message.decode())
 
-    private_key = generate_private_key()
-    public_key = generate_public_key(g, p, private_key)
-
-    server_public_key = int(client.recv(1024).decode())
-    client.send(str(public_key).encode())
-
-    shared_secret = generate_shared_secret(server_public_key, private_key, p)
-    print("Shared secret:", shared_secret)
+    message = "Hello, server!"
+    encrypted_message = encrypt_message(message.encode())
+    client.send(encrypted_message)
 
     client.close()
 
