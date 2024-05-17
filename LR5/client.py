@@ -1,5 +1,5 @@
+# Клиент
 import socket
-import pickle
 import random
 
 def generate_private_key():
@@ -11,15 +11,23 @@ def generate_public_key(g, p, private_key):
 def generate_shared_secret(public_key, private_key, p):
     return (public_key ** private_key) % p
 
+def main():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('localhost', 12345))
 
-HOST = '127.0.0.1'
-PORT = 8080
+    g = 5  # генератор
+    p = 23  # простое число
 
-sock = socket.socket()
-sock.connect((HOST, PORT))
+    private_key = generate_private_key()
+    public_key = generate_public_key(g, p, private_key)
 
-p, g, a = 7, 5, 3
-A = g ** a % p
-sock.send(pickle.dumps((p, g, A)))
+    server_public_key = int(client.recv(1024).decode())
+    client.send(str(public_key).encode())
 
-sock.close()
+    shared_secret = generate_shared_secret(server_public_key, private_key, p)
+    print("Shared secret:", shared_secret)
+
+    client.close()
+
+if __name__ == "__main__":
+    main()
