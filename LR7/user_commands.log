@@ -1,0 +1,8 @@
+2024-05-17 13:40:14.832624 - natasha: login natasha 123
+2024-05-17 13:40:20.139607 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: ls C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:23.936916 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: pwd C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:28.687869 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: mkdir newd C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:34.914144 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: rmdir newd C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:40.504123 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: ls C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:56.935481 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: mv newFile.txt oldFile.txt C:\Users\msch\OneDrive\PP\LR7\users\natasha
+2024-05-17 13:40:59.052513 - C:\Users\msch\OneDrive\PP\LR7\users\natasha: ls C:\Users\msch\OneDrive\PP\LR7\users\natasha
