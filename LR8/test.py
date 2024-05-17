@@ -1,24 +1,14 @@
 import requests
 
-# URL сервиса
-base_url = 'http://127.0.0.1:5000'
+# URL веб-сервера
+url = 'https://localhost:5000'
 
-# Регистрация пользователя
-def register_user(username, password):
-    url = f'{base_url}/user/'
-    data = {"username": username, "password": password}
-    response = requests.post(url, json=data)
-    print(response.json())
+# Путь к нашему самоподписанному SSL-сертификату
+ssl_cert = 'ssl_cert/cert.pem'
 
-# Получение данных о пользователе
-def get_user(username):
-    url = f'{base_url}/user/{username}'
-    response = requests.get(url)
-    print(response.json())
+# Отключаем проверку SSL-сертификата (только для тестирования!)
+requests.packages.urllib3.disable_warnings()
 
-if __name__ == '__main__':
-    # Регистрация нового пользователя
-    register_user('testuser', 'testpassword')
-    
-    # Получение данных о пользователе
-    get_user('testuser')
+# Отправка GET-запроса на главную страницу
+response = requests.get(url, verify=ssl_cert)
+print(response.text)
