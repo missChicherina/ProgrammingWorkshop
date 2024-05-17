@@ -1,5 +1,5 @@
 # расширена process
-# команды для работы с файлами и папками на сервере.
+# проверяет что запрашиваемые файлы и папки находятся внутри рабочей директории сервера.
 
 import socket
 import os
@@ -26,8 +26,11 @@ def process(req):
             return 'File not found'
     elif cmd == 'mkdir' and args:
         new_dir = os.path.join(dirname, args[0])
-        os.makedirs(new_dir, exist_ok=True)
-        return f'Created directory {new_dir}'
+        if os.path.commonpath([new_dir, dirname]) == dirname:  # Check if new directory is inside working directory
+            os.makedirs(new_dir, exist_ok=True)
+            return f'Created directory {new_dir}'
+        else:
+            return 'Access denied'
     elif cmd == 'rmdir' and args:
         dir_to_remove = os.path.join(dirname, args[0])
         if os.path.exists(dir_to_remove) and os.path.isdir(dir_to_remove):
@@ -57,6 +60,8 @@ def process(req):
             file.write(input('Enter file content: '))
         return f'File {filename} uploaded'
     return 'bad request'
+
+
 
 
 PORT = 6666
