@@ -1,25 +1,32 @@
 import socket
-import pickle
-import random
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
-def generate_private_key():
-    return random.randint(2, 100)
+def encrypt_message(message, public_key):
+    recipient_key = RSA.import_key(public_key)
+    cipher_rsa = PKCS1_OAEP.new(recipient_key)
+    encrypted_message = cipher_rsa.encrypt(message)
+    return encrypted_message
 
-def generate_public_key(g, p, private_key):
-    return (g ** private_key) % p
+def decrypt_message(encrypted_message, private_key):
+    key = RSA.import_key(private_key)
+    cipher_rsa = PKCS1_OAEP.new(key)
+    decrypted_message = cipher_rsa.decrypt(encrypted_message)
+    return decrypted_message
 
-def generate_shared_secret(public_key, private_key, p):
-    return (public_key ** private_key) % p
+def main():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('localhost', 12345))
 
+    received_message = client.recv(4096)
+    decrypted_message = decrypt_message(received_message)
+    print("Received message from server:", decrypted_message.decode())
 
-HOST = '127.0.0.1'
-PORT = 8080
+    message = "Hello, server!"
+    encrypted_message = encrypt_message(message.encode())
+    client.send(encrypted_message)
 
-sock = socket.socket()
-sock.connect((HOST, PORT))
+    client.close()
 
-p, g, a = 7, 5, 3
-A = g ** a % p
-sock.send(pickle.dumps((p, g, A)))
-
-sock.close()
+if __name__ == "__main__":
+    main()
